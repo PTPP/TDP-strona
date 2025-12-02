@@ -57,7 +57,7 @@ function initPageSpecificScripts() {
             }
         });
     });
-    
+
     // Adjust maxHeight on window resize for active accordions.
     // Use a global flag to attach the listener only once.
     if (!window.accordionResizeListener) {
@@ -76,7 +76,7 @@ function initPageSpecificScripts() {
         const panels = container.querySelectorAll('.tab-panel');
 
         tabs.forEach(tab => {
-             // Prevent re-attaching listeners on page transitions
+            // Prevent re-attaching listeners on page transitions
             if (tab.dataset.tabInitialized) return;
             tab.dataset.tabInitialized = 'true';
 
@@ -99,7 +99,7 @@ function initPageSpecificScripts() {
                 tab.classList.add('active');
                 tab.setAttribute('aria-selected', 'true');
                 tab.setAttribute('tabindex', '0');
-                
+
                 const targetPanel = container.querySelector(`#${targetId}`);
                 if (targetPanel) {
                     targetPanel.classList.add('active');
@@ -110,12 +110,15 @@ function initPageSpecificScripts() {
     });
 
     // --- Audio Player Logic ---
-    const audio = document.getElementById('tdp-song');
-    const playBtn = document.getElementById('play-pause-btn');
+    const audio = document.getElementById('tdp-song-main');
+    const playBtn = document.getElementById('play-pause-btn-main');
+    const progressBar = document.getElementById('progress-bar');
+    const progressContainer = document.getElementById('progress-container');
+    const timeDisplay = document.getElementById('time-display');
 
     if (audio && playBtn) {
-        const playIcon = 'play_circle';
-        const pauseIcon = 'pause_circle';
+        const playIcon = 'play_arrow';
+        const pauseIcon = 'pause';
 
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
@@ -127,8 +130,34 @@ function initPageSpecificScripts() {
             }
         });
 
+        audio.addEventListener('timeupdate', () => {
+            const { currentTime, duration } = audio;
+            if (duration) {
+                const progressPercent = (currentTime / duration) * 100;
+                if (progressBar) progressBar.style.width = `${progressPercent}%`;
+
+                // Update time display
+                const minutes = Math.floor(currentTime / 60);
+                const seconds = Math.floor(currentTime % 60);
+                if (timeDisplay) timeDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            }
+        });
+
+        if (progressContainer) {
+            progressContainer.addEventListener('click', (e) => {
+                const width = progressContainer.clientWidth;
+                const clickX = e.offsetX;
+                const duration = audio.duration;
+                if (duration) {
+                    audio.currentTime = (clickX / width) * duration;
+                }
+            });
+        }
+
         audio.addEventListener('ended', () => {
             playBtn.querySelector('.material-symbols-outlined').textContent = playIcon;
+            if (progressBar) progressBar.style.width = '0%';
+            if (timeDisplay) timeDisplay.textContent = '0:00';
         });
     }
 }
@@ -179,7 +208,7 @@ async function performTransition(url) {
             } else {
                 window.scrollTo(0, 0);
             }
-            
+
             initPageSpecificScripts(); // Re-initialize scripts for the new content
         } else {
             window.location.href = url;
@@ -200,14 +229,14 @@ async function performTransition(url) {
 document.addEventListener('DOMContentLoaded', () => {
     // Initial setup for the first page load
     initPageSpecificScripts();
-    
+
     // --- Floating Nav Menu Logic ---
     // This script should only be initialized once.
     if (!window.floatingNavInitialized) {
         const navBg = document.getElementById('nav-bg');
         const toggleBtn = document.getElementById('toggle-btn');
         const mainNav = document.getElementById('main-nav');
-        
+
         if (navBg && toggleBtn && mainNav) {
             let open = false;
 
@@ -216,16 +245,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const h = window.innerHeight;
                 const btnRect = toggleBtn.getBoundingClientRect();
                 const bgRect = navBg.getBoundingClientRect();
-                
+
                 const btnCenterX = btnRect.left + btnRect.width / 2;
                 const btnCenterY = btnRect.top + btnRect.height / 2;
 
                 const translateX = (w / 2) - btnCenterX;
                 const translateY = (h / 2) - btnCenterY;
-                
+
                 // Radius to cover the distance to the farthest corner (bottom-left from top-right button)
-                const radius = Math.sqrt(btnCenterX**2 + (h - btnCenterY)**2);
-                
+                const radius = Math.sqrt(btnCenterX ** 2 + (h - btnCenterY) ** 2);
+
                 const scale = (radius * 2) / bgRect.width;
 
                 return { scale, translateX, translateY };
@@ -260,16 +289,16 @@ document.addEventListener('DOMContentLoaded', () => {
             mainNav.querySelectorAll('a').forEach(link => {
                 // The main SPA logic already handles the click, we just need to close the menu
                 link.addEventListener('click', () => {
-                    if(open) {
+                    if (open) {
                         toggleMenu();
                     }
                 });
             });
 
-            const resizeHandler = () => { 
+            const resizeHandler = () => {
                 window.requestAnimationFrame(() => {
                     if (open) {
-                       openMenu();
+                        openMenu();
                     }
                 });
             }
@@ -301,12 +330,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!link || !link.href || link.target === '_blank' || !link.protocol.startsWith('http') || link.hostname !== window.location.hostname) {
             return;
         }
-        
+
         // Ignore same-page anchor links to allow default smooth scrolling
         if (link.pathname === window.location.pathname && link.hash) {
             return;
         }
-        
+
         event.preventDefault();
 
         // Avoid re-triggering transition for the exact same URL
